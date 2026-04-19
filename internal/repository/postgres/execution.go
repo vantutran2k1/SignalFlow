@@ -26,6 +26,15 @@ func (r *ExecutionRepository) Create(ctx context.Context, exec *domain.Execution
 	return err
 }
 
+func (r *ExecutionRepository) Update(ctx context.Context, exec *domain.Execution) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE executions SET status=$1, output=$2, error=$3, duration_ms=$4, finished_at=$5
+         WHERE id=$6`,
+		exec.Status, exec.Output, exec.Error, exec.DurationMs, exec.FinishedAt, exec.ID,
+	)
+	return err
+}
+
 func (r *ExecutionRepository) GetByID(ctx context.Context, id string) (*domain.Execution, error) {
 	exec := &domain.Execution{}
 	err := r.pool.QueryRow(ctx,
@@ -97,6 +106,19 @@ func (r *ExecutionRepository) ListRecent(ctx context.Context, limit int) ([]doma
 		execs = append(execs, e)
 	}
 	return execs, nil
+}
+
+func (r *ExecutionRepository) RecoverStaleRunning(ctx context.Context, cutoff time.Time) (int64, error) {
+	tag, err := r.pool.Exec(ctx,
+		`UPDATE executions
+         SET status = 'error', error = 'scheduler crashed or timed out', finished_at = now()
+         WHERE status = 'running' AND started_at < $1`,
+		cutoff,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
 }
 
 func (r *ExecutionRepository) DeleteOlderThan(ctx context.Context, before time.Time) (int64, error) {

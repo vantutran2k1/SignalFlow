@@ -12,17 +12,21 @@ import (
 
 	"github.com/vantutran2k1/SignalFlow/internal/config"
 	"github.com/vantutran2k1/SignalFlow/internal/database"
+	"github.com/vantutran2k1/SignalFlow/internal/domain"
+	"github.com/vantutran2k1/SignalFlow/internal/executor"
 	"github.com/vantutran2k1/SignalFlow/internal/handler"
 	"github.com/vantutran2k1/SignalFlow/internal/repository/postgres"
+	"github.com/vantutran2k1/SignalFlow/internal/scheduler"
 	"github.com/vantutran2k1/SignalFlow/internal/service"
 )
 
 const shutdownTimeout = 10 * time.Second
 
 type App struct {
-	cfg    *config.Config
-	pool   *pgxpool.Pool
-	router http.Handler
+	cfg       *config.Config
+	pool      *pgxpool.Pool
+	router    http.Handler
+	scheduler *scheduler.Scheduler
 }
 
 func New(ctx context.Context, cfg *config.Config) (*App, error) {
@@ -46,10 +50,17 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		Notification: handler.NewNotificationHandler(service.NewNotificationService(notifRepo)),
 	}
 
+	executors := map[domain.JobType]executor.Executor{
+		domain.JobTypeHTTPCheck: executor.NewHTTPCheck(),
+		domain.JobTypeCommand:   executor.NewCommand(),
+	}
+	sched := scheduler.New(jobRepo, execRepo, executors, cfg.WorkerCount, slog.Default())
+
 	return &App{
-		cfg:    cfg,
-		pool:   pool,
-		router: handler.NewRouter(cfg.JWTSecret, handlers),
+		cfg:       cfg,
+		pool:      pool,
+		router:    handler.NewRouter(cfg.JWTSecret, handlers),
+		scheduler: sched,
 	}, nil
 }
 
@@ -77,6 +88,10 @@ func (a *App) Run(ctx context.Context) error {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 		return srv.Shutdown(shutdownCtx)
+	})
+
+	g.Go(func() error {
+		return a.scheduler.Run(gctx)
 	})
 
 	return g.Wait()

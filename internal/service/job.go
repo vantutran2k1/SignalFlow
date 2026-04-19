@@ -31,6 +31,7 @@ type CreateJobInput struct {
 	Config         json.RawMessage
 	NotifyChannels []string
 	Condition      json.RawMessage
+	TimeoutSeconds int
 }
 
 type UpdateJobInput struct {
@@ -39,6 +40,7 @@ type UpdateJobInput struct {
 	Config         *json.RawMessage
 	NotifyChannels *[]string
 	Condition      *json.RawMessage
+	TimeoutSeconds *int
 }
 
 func (s *JobService) Create(ctx context.Context, in CreateJobInput) (*domain.Job, error) {
@@ -53,6 +55,11 @@ func (s *JobService) Create(ctx context.Context, in CreateJobInput) (*domain.Job
 		condition = json.RawMessage(`{"on":"failure"}`)
 	}
 
+	timeout := in.TimeoutSeconds
+	if timeout <= 0 {
+		timeout = 30
+	}
+
 	job := &domain.Job{
 		ID:             uuid.NewString(),
 		UserID:         in.UserID,
@@ -63,6 +70,7 @@ func (s *JobService) Create(ctx context.Context, in CreateJobInput) (*domain.Job
 		Status:         domain.JobStatusActive,
 		NotifyChannels: in.NotifyChannels,
 		Condition:      condition,
+		TimeoutSeconds: timeout,
 		NextRunAt:      &nextRun,
 	}
 
@@ -113,6 +121,9 @@ func (s *JobService) Update(ctx context.Context, id string, in UpdateJobInput) (
 	}
 	if in.Condition != nil {
 		job.Condition = *in.Condition
+	}
+	if in.TimeoutSeconds != nil && *in.TimeoutSeconds > 0 {
+		job.TimeoutSeconds = *in.TimeoutSeconds
 	}
 
 	if err := s.repo.Update(ctx, job); err != nil {

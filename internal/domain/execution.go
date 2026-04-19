@@ -8,6 +8,7 @@ import (
 type ExecStatus string
 
 const (
+	ExecStatusRunning ExecStatus = "running"
 	ExecStatusSuccess ExecStatus = "success"
 	ExecStatusFailure ExecStatus = "failure"
 	ExecStatusError   ExecStatus = "error"
@@ -21,13 +22,17 @@ type Execution struct {
 	Error      string     `json:"error"`
 	DurationMs int64      `json:"duration_ms"`
 	StartedAt  time.Time  `json:"started_at"`
-	FinishedAt time.Time  `json:"finished_at"`
+	FinishedAt *time.Time `json:"finished_at"`
 }
 
 type ExecutionRepository interface {
 	Create(ctx context.Context, exec *Execution) error
+	Update(ctx context.Context, exec *Execution) error
 	GetByID(ctx context.Context, id string) (*Execution, error)
 	ListByJob(ctx context.Context, jobID string, offset, limit int) ([]Execution, int, error)
 	ListRecent(ctx context.Context, limit int) ([]Execution, error)
+	// RecoverStaleRunning marks executions stuck in 'running' state older than
+	// the given cutoff as 'error' and sets finished_at to now. Returns count updated.
+	RecoverStaleRunning(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteOlderThan(ctx context.Context, before time.Time) (int64, error)
 }

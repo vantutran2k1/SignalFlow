@@ -39,6 +39,7 @@ func (h *JobHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Config         json.RawMessage `json:"config"`
 		NotifyChannels []string        `json:"notify_channels"`
 		Condition      json.RawMessage `json:"condition"`
+		TimeoutSeconds int             `json:"timeout_seconds"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid JSON")
@@ -53,6 +54,7 @@ func (h *JobHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Config:         req.Config,
 		NotifyChannels: req.NotifyChannels,
 		Condition:      req.Condition,
+		TimeoutSeconds: req.TimeoutSeconds,
 	})
 	if err != nil {
 		writeServiceError(w, err)
@@ -77,6 +79,7 @@ func (h *JobHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Config         *json.RawMessage `json:"config"`
 		NotifyChannels *[]string        `json:"notify_channels"`
 		Condition      *json.RawMessage `json:"condition"`
+		TimeoutSeconds *int             `json:"timeout_seconds"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid JSON")
@@ -89,6 +92,7 @@ func (h *JobHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Config:         req.Config,
 		NotifyChannels: req.NotifyChannels,
 		Condition:      req.Condition,
+		TimeoutSeconds: req.TimeoutSeconds,
 	})
 	if err != nil {
 		writeServiceError(w, err)
