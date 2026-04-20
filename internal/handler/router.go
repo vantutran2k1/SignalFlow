@@ -52,7 +52,6 @@ func NewRouter(jwtSecret string, h Handlers) http.Handler {
 				r.Get("/{id}", h.Channel.Get)
 				r.Put("/{id}", h.Channel.Update)
 				r.Delete("/{id}", h.Channel.Delete)
-				r.Post("/{id}/test", h.Channel.TestNotification)
 			})
 
 			r.Get("/executions/recent", h.Execution.ListRecent)

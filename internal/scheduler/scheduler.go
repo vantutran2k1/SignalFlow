@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"sync"
 	"time"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/vantutran2k1/SignalFlow/internal/domain"
 	"github.com/vantutran2k1/SignalFlow/internal/executor"
+	"github.com/vantutran2k1/SignalFlow/internal/notifier"
 )
 
 const (
@@ -23,30 +25,33 @@ const (
 )
 
 type Scheduler struct {
-	jobRepo   domain.JobRepository
-	execRepo  domain.ExecutionRepository
-	executors map[domain.JobType]executor.Executor
-	parser    cronlib.Parser
-	workers   int
-	jobChan   chan *domain.JobClaim
-	logger    *slog.Logger
+	jobRepo    domain.JobRepository
+	execRepo   domain.ExecutionRepository
+	executors  map[domain.JobType]executor.Executor
+	dispatcher *notifier.Dispatcher
+	parser     cronlib.Parser
+	workers    int
+	jobChan    chan *domain.JobClaim
+	logger     *slog.Logger
 }
 
 func New(
 	jobRepo domain.JobRepository,
 	execRepo domain.ExecutionRepository,
 	executors map[domain.JobType]executor.Executor,
+	dispatcher *notifier.Dispatcher,
 	workers int,
 	logger *slog.Logger,
 ) *Scheduler {
 	return &Scheduler{
-		jobRepo:   jobRepo,
-		execRepo:  execRepo,
-		executors: executors,
-		parser:    cronlib.NewParser(cronlib.Minute | cronlib.Hour | cronlib.Dom | cronlib.Month | cronlib.Dow),
-		workers:   workers,
-		jobChan:   make(chan *domain.JobClaim, workers*2),
-		logger:    logger,
+		jobRepo:    jobRepo,
+		execRepo:   execRepo,
+		executors:  executors,
+		dispatcher: dispatcher,
+		parser:     cronlib.NewParser(cronlib.Minute | cronlib.Hour | cronlib.Dom | cronlib.Month | cronlib.Dow),
+		workers:    workers,
+		jobChan:    make(chan *domain.JobClaim, workers*2),
+		logger:     logger,
 	}
 }
 
@@ -99,6 +104,11 @@ dispatchLoop:
 		s.logger.Warn("drain grace period expired, cancelling in-flight jobs")
 		execCancel()
 		<-done
+	}
+
+	if s.dispatcher != nil {
+		s.logger.Info("waiting for in-flight notifications")
+		s.dispatcher.Wait()
 	}
 	return nil
 }
@@ -204,6 +214,36 @@ func (s *Scheduler) executeJob(ctx context.Context, claim *domain.JobClaim) {
 		"status", exec.Status,
 		"duration_ms", exec.DurationMs,
 	)
+
+	if s.dispatcher != nil && s.shouldNotify(job, exec) {
+		s.dispatcher.Dispatch(writeCtx, job, exec)
+	}
+}
+
+func (s *Scheduler) shouldNotify(job *domain.Job, exec *domain.Execution) bool {
+	if len(job.Condition) == 0 {
+		return isFailure(exec.Status)
+	}
+	var cond struct {
+		On string `json:"on"`
+	}
+	if err := json.Unmarshal(job.Condition, &cond); err != nil {
+		return false
+	}
+	switch cond.On {
+	case "failure":
+		return isFailure(exec.Status)
+	case "success":
+		return exec.Status == domain.ExecStatusSuccess
+	case "always":
+		return true
+	default:
+		return isFailure(exec.Status)
+	}
+}
+
+func isFailure(s domain.ExecStatus) bool {
+	return s == domain.ExecStatusFailure || s == domain.ExecStatusError
 }
 
 func (s *Scheduler) markFailed(ctx context.Context, execID, reason string) {

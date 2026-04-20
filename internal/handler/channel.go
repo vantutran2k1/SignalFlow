@@ -98,7 +98,3 @@ func (h *ChannelHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
-
-func (h *ChannelHandler) TestNotification(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "not implemented yet")
-}

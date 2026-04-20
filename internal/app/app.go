@@ -15,6 +15,7 @@ import (
 	"github.com/vantutran2k1/SignalFlow/internal/domain"
 	"github.com/vantutran2k1/SignalFlow/internal/executor"
 	"github.com/vantutran2k1/SignalFlow/internal/handler"
+	"github.com/vantutran2k1/SignalFlow/internal/notifier"
 	"github.com/vantutran2k1/SignalFlow/internal/repository/postgres"
 	"github.com/vantutran2k1/SignalFlow/internal/scheduler"
 	"github.com/vantutran2k1/SignalFlow/internal/service"
@@ -42,6 +43,13 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	execRepo := postgres.NewExecutionRepository(pool)
 	notifRepo := postgres.NewNotificationRepository(pool)
 
+	dispatcher := notifier.NewDispatcher(channelRepo, notifRepo, slog.Default())
+	dispatcher.Register(notifier.NewWebhookNotifier())
+	dispatcher.Register(notifier.NewSlackNotifier())
+	dispatcher.Register(notifier.NewDiscordNotifier())
+	dispatcher.Register(notifier.NewTelegramNotifier())
+	dispatcher.Register(notifier.NewEmailNotifier())
+
 	handlers := handler.Handlers{
 		Auth:         handler.NewAuthHandler(service.NewAuthService(userRepo, cfg.JWTSecret)),
 		Job:          handler.NewJobHandler(service.NewJobService(jobRepo)),
@@ -54,7 +62,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		domain.JobTypeHTTPCheck: executor.NewHTTPCheck(),
 		domain.JobTypeCommand:   executor.NewCommand(),
 	}
-	sched := scheduler.New(jobRepo, execRepo, executors, cfg.WorkerCount, slog.Default())
+	sched := scheduler.New(jobRepo, execRepo, executors, dispatcher, cfg.WorkerCount, slog.Default())
 
 	return &App{
 		cfg:       cfg,
