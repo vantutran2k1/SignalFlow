@@ -108,6 +108,47 @@ func (r *ExecutionRepository) ListRecent(ctx context.Context, limit int) ([]doma
 	return execs, nil
 }
 
+func (r *ExecutionRepository) ListRecentByUser(ctx context.Context, userID string, limit int) ([]domain.Execution, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT e.id, e.job_id, e.status, e.output, e.error, e.duration_ms, e.started_at, e.finished_at
+         FROM executions e
+         JOIN jobs j ON j.id = e.job_id
+         WHERE j.user_id = $1
+         ORDER BY e.started_at DESC LIMIT $2`,
+		userID, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var execs []domain.Execution
+	for rows.Next() {
+		var e domain.Execution
+		if err := rows.Scan(
+			&e.ID, &e.JobID, &e.Status, &e.Output, &e.Error,
+			&e.DurationMs, &e.StartedAt, &e.FinishedAt,
+		); err != nil {
+			return nil, err
+		}
+		execs = append(execs, e)
+	}
+	return execs, nil
+}
+
+func (r *ExecutionRepository) CountFailuresByUserSince(ctx context.Context, userID string, since time.Time) (int, error) {
+	var n int
+	err := r.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM executions e
+         JOIN jobs j ON j.id = e.job_id
+         WHERE j.user_id = $1
+           AND e.status IN ('failure', 'error')
+           AND e.started_at >= $2`,
+		userID, since,
+	).Scan(&n)
+	return n, err
+}
+
 func (r *ExecutionRepository) RecoverStaleRunning(ctx context.Context, cutoff time.Time) (int64, error) {
 	tag, err := r.pool.Exec(ctx,
 		`UPDATE executions

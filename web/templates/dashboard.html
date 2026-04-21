@@ -1,0 +1,31 @@
+{{define "content"}}
+<h1>Dashboard</h1>
+
+<div class="grid">
+    <div class="card">
+        <div class="text-muted text-sm">Total Jobs</div>
+        <div class="stat">{{.Stats.TotalJobs}}</div>
+    </div>
+    <div class="card">
+        <div class="text-muted text-sm">Active Jobs</div>
+        <div class="stat">{{.Stats.ActiveJobs}}</div>
+    </div>
+    <div class="card">
+        <div class="text-muted text-sm">Failures (24h)</div>
+        <div class="stat stat-danger">{{.Stats.RecentFailures}}</div>
+    </div>
+    <div class="card">
+        <div class="text-muted text-sm">Notifications Sent (24h)</div>
+        <div class="stat">{{.Stats.NotificationsSent}}</div>
+    </div>
+</div>
+
+<div class="card mt-1">
+    <h2>Recent Executions</h2>
+    <div hx-get="/dashboard/partials/recent-executions"
+         hx-trigger="load, every 10s"
+         hx-swap="innerHTML">
+        <p class="text-muted">Loading…</p>
+    </div>
+</div>
+{{end}}

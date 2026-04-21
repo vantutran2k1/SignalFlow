@@ -177,3 +177,17 @@ func (r *JobRepository) Delete(ctx context.Context, id string) error {
 	_, err := r.pool.Exec(ctx, `DELETE FROM jobs WHERE id = $1`, id)
 	return err
 }
+
+func (r *JobRepository) CountByUser(ctx context.Context, userID string) (int, error) {
+	var n int
+	err := r.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM jobs WHERE user_id = $1`, userID).Scan(&n)
+	return n, err
+}
+
+func (r *JobRepository) CountActiveByUser(ctx context.Context, userID string) (int, error) {
+	var n int
+	err := r.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM jobs WHERE user_id = $1 AND status = 'active'`, userID).Scan(&n)
+	return n, err
+}

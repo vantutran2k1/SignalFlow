@@ -1,0 +1,86 @@
+{{define "content"}}
+<h1>Jobs</h1>
+
+<div class="card">
+    <h3>Create Job</h3>
+    <form method="POST" action="/dashboard/jobs">
+        <label>Name
+            <input type="text" name="name" required>
+        </label>
+        <label>Type
+            <select name="type">
+                <option value="http_check">HTTP Check</option>
+                <option value="command">Command</option>
+            </select>
+        </label>
+        <label>Schedule (cron)
+            <input type="text" name="schedule" placeholder="*/5 * * * *" required>
+        </label>
+        <label>Timeout (seconds)
+            <input type="number" name="timeout_seconds" value="30" min="1">
+        </label>
+        <label>Config (JSON)
+            <textarea name="config" rows="4" placeholder='{"url": "https://example.com", "expected_status": 200}'></textarea>
+        </label>
+        <label>Condition (JSON)
+            <textarea name="condition" rows="2" placeholder='{"on": "failure"}'></textarea>
+        </label>
+        <label>Notify Channels (comma-separated IDs)
+            <input type="text" name="notify_channels" placeholder="id1,id2">
+        </label>
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+    </form>
+</div>
+
+<div class="card mt-1">
+    {{if .Jobs}}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Schedule</th>
+                <th>Status</th>
+                <th>Last Run</th>
+                <th>Next Run</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Jobs}}
+            <tr>
+                <td><a href="/jobs/{{.ID}}">{{.Name}}</a></td>
+                <td>{{.Type}}</td>
+                <td><code>{{.Schedule}}</code></td>
+                <td><span class="badge badge-{{.Status}}">{{.Status}}</span></td>
+                <td>{{if .LastRunAt}}{{.LastRunAt.Format "2006-01-02 15:04:05"}}{{else}}<span class="text-muted">—</span>{{end}}</td>
+                <td>{{if .NextRunAt}}{{.NextRunAt.Format "2006-01-02 15:04:05"}}{{else}}<span class="text-muted">—</span>{{end}}</td>
+                <td>
+                    <form method="POST" action="/dashboard/jobs/{{.ID}}/run" style="display:inline">
+                        <button type="submit">Run</button>
+                    </form>
+                    {{if eq (printf "%s" .Status) "active"}}
+                    <form method="POST" action="/dashboard/jobs/{{.ID}}/pause" style="display:inline">
+                        <button type="submit">Pause</button>
+                    </form>
+                    {{else if eq (printf "%s" .Status) "paused"}}
+                    <form method="POST" action="/dashboard/jobs/{{.ID}}/resume" style="display:inline">
+                        <button type="submit">Resume</button>
+                    </form>
+                    {{end}}
+                    <form method="POST" action="/dashboard/jobs/{{.ID}}/delete" style="display:inline"
+                          onsubmit="return confirm('Delete this job?')">
+                        <button type="submit" class="btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p class="text-muted">No jobs yet. Create one above.</p>
+    {{end}}
+</div>
+{{end}}

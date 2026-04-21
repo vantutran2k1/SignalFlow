@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalFlow · Sign in</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1>SignalFlow</h1>
+        {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
+        <form method="POST" action="/login">
+            <label>Email
+                <input type="email" name="email" value="{{.Email}}" required autofocus>
+            </label>
+            <label>Password
+                <input type="password" name="password" required>
+            </label>
+            <button type="submit" class="btn btn-primary" style="width:100%">Sign in</button>
+        </form>
+        <p class="text-muted text-sm mt-1" style="text-align:center">
+            No account? Register through the API:
+            <code>POST /api/v1/auth/register</code>
+        </p>
+    </div>
+</body>
+</html>

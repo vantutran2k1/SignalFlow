@@ -73,11 +73,24 @@ func (r *NotificationRepository) ListRecent(ctx context.Context, limit int) ([]d
 	return notifs, nil
 }
 
+func (r *NotificationRepository) CountSentByUserSince(ctx context.Context, userID string, since time.Time) (int, error) {
+	var n int
+	err := r.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM notifications n
+         JOIN executions e ON e.id = n.execution_id
+         JOIN jobs j ON j.id = e.job_id
+         WHERE j.user_id = $1
+           AND n.status = 'sent'
+           AND n.created_at >= $2`,
+		userID, since,
+	).Scan(&n)
+	return n, err
+}
+
 func (r *NotificationRepository) UpdateStatus(ctx context.Context, id string, status domain.NotificationStatus, errMsg string) error {
 	var sentAt *time.Time
 	if status == domain.NotifStatusSent {
-		now := time.Now()
-		sentAt = &now
+		sentAt = new(time.Now())
 	}
 	_, err := r.pool.Exec(ctx,
 		`UPDATE notifications SET status=$1, error=$2, sent_at=$3 WHERE id=$4`,

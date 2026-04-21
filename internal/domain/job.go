@@ -61,4 +61,6 @@ type JobRepository interface {
 	ClaimDue(ctx context.Context, limit int, next NextRunFunc) ([]JobClaim, error)
 	Update(ctx context.Context, job *Job) error
 	Delete(ctx context.Context, id string) error
+	CountByUser(ctx context.Context, userID string) (int, error)
+	CountActiveByUser(ctx context.Context, userID string) (int, error)
 }

@@ -50,12 +50,21 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	dispatcher.Register(notifier.NewTelegramNotifier())
 	dispatcher.Register(notifier.NewEmailNotifier())
 
+	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret)
+	jobSvc := service.NewJobService(jobRepo)
+	channelSvc := service.NewChannelService(channelRepo)
+	execSvc := service.NewExecutionService(execRepo)
+	notifSvc := service.NewNotificationService(notifRepo)
+	dashSvc := service.NewDashboardService(jobRepo, execRepo, notifRepo)
+
 	handlers := handler.Handlers{
-		Auth:         handler.NewAuthHandler(service.NewAuthService(userRepo, cfg.JWTSecret)),
-		Job:          handler.NewJobHandler(service.NewJobService(jobRepo)),
-		Channel:      handler.NewChannelHandler(service.NewChannelService(channelRepo)),
-		Execution:    handler.NewExecutionHandler(service.NewExecutionService(execRepo)),
-		Notification: handler.NewNotificationHandler(service.NewNotificationService(notifRepo)),
+		Auth:         handler.NewAuthHandler(authSvc),
+		Job:          handler.NewJobHandler(jobSvc),
+		Channel:      handler.NewChannelHandler(channelSvc),
+		Execution:    handler.NewExecutionHandler(execSvc),
+		Notification: handler.NewNotificationHandler(notifSvc),
+		Session:      handler.NewSessionHandler(authSvc, cfg.JWTSecret),
+		Dashboard:    handler.NewDashboardHandler(jobSvc, channelSvc, execSvc, dashSvc),
 	}
 
 	executors := map[domain.JobType]executor.Executor{

@@ -1,0 +1,73 @@
+{{define "content"}}
+<h1>Channels</h1>
+
+<div class="card">
+    <h3>Create Channel</h3>
+    <form method="POST" action="/dashboard/channels">
+        <label>Name
+            <input type="text" name="name" required>
+        </label>
+        <label>Type
+            <select name="type">
+                <option value="webhook">Webhook</option>
+                <option value="slack">Slack</option>
+                <option value="discord">Discord</option>
+                <option value="telegram">Telegram</option>
+                <option value="email">Email</option>
+            </select>
+        </label>
+        <label>Config (JSON)
+            <textarea name="config" rows="5" placeholder='{"url": "https://webhook.site/..."}' required></textarea>
+        </label>
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+    </form>
+    <details class="text-sm text-muted mt-1">
+        <summary>Config examples by type</summary>
+        <pre>webhook:  {"url": "https://...", "headers": {"X-Key": "..."}}
+slack:    {"webhook_url": "https://hooks.slack.com/..."}
+discord:  {"webhook_url": "https://discord.com/api/webhooks/..."}
+telegram: {"bot_token": "123:abc", "chat_id": "456"}
+email:    {"smtp_host": "...", "smtp_port": 587, "username": "...",
+           "password": "...", "from": "...", "to": "..."}</pre>
+    </details>
+</div>
+
+<div class="card mt-1">
+    {{if .Channels}}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Enabled</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Channels}}
+            <tr>
+                <td>{{.Name}} <div class="text-muted text-sm"><code>{{.ID}}</code></div></td>
+                <td>{{.Type}}</td>
+                <td>{{if .Enabled}}<span class="badge badge-active">yes</span>{{else}}<span class="badge badge-disabled">no</span>{{end}}</td>
+                <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+                <td>
+                    <form method="POST" action="/dashboard/channels/{{.ID}}/toggle" style="display:inline">
+                        <button type="submit">{{if .Enabled}}Disable{{else}}Enable{{end}}</button>
+                    </form>
+                    <form method="POST" action="/dashboard/channels/{{.ID}}/delete" style="display:inline"
+                          onsubmit="return confirm('Delete this channel?')">
+                        <button type="submit" class="btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p class="text-muted">No channels yet. Create one above.</p>
+    {{end}}
+</div>
+{{end}}

@@ -29,4 +29,5 @@ type NotificationRepository interface {
 	ListByExecution(ctx context.Context, executionID string) ([]Notification, error)
 	ListRecent(ctx context.Context, limit int) ([]Notification, error)
 	UpdateStatus(ctx context.Context, id string, status NotificationStatus, errMsg string) error
+	CountSentByUserSince(ctx context.Context, userID string, since time.Time) (int, error)
 }

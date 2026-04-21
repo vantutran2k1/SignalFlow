@@ -1,0 +1,25 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalFlow{{if .Title}} · {{.Title}}{{end}}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/htmx.min.js" defer></script>
+</head>
+<body>
+    <nav>
+        <a href="/"><strong>SignalFlow</strong></a>
+        <a href="/jobs">Jobs</a>
+        <a href="/channels">Channels</a>
+        <span class="spacer"></span>
+        <form method="POST" action="/logout" style="margin:0">
+            <button type="submit">Logout</button>
+        </form>
+    </nav>
+    <div class="container">
+        {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
+        {{template "content" .}}
+    </div>
+</body>
+</html>{{end}}

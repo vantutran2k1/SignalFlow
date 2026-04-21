@@ -1,0 +1,63 @@
+{{define "content"}}
+{{with .Job}}
+<h1>{{.Name}}</h1>
+<p class="text-muted text-sm"><code>{{.ID}}</code></p>
+
+<div class="card mt-1">
+    <table>
+        <tr><th>Type</th><td>{{.Type}}</td></tr>
+        <tr><th>Schedule</th><td><code>{{.Schedule}}</code></td></tr>
+        <tr><th>Status</th><td><span class="badge badge-{{.Status}}">{{.Status}}</span></td></tr>
+        <tr><th>Timeout</th><td>{{.TimeoutSeconds}}s</td></tr>
+        <tr><th>Last Run</th><td>{{if .LastRunAt}}{{.LastRunAt.Format "2006-01-02 15:04:05"}}{{else}}<span class="text-muted">—</span>{{end}}</td></tr>
+        <tr><th>Next Run</th><td>{{if .NextRunAt}}{{.NextRunAt.Format "2006-01-02 15:04:05"}}{{else}}<span class="text-muted">—</span>{{end}}</td></tr>
+        <tr><th>Config</th><td><pre class="text-monospace text-sm">{{printf "%s" .Config}}</pre></td></tr>
+        <tr><th>Condition</th><td><pre class="text-monospace text-sm">{{printf "%s" .Condition}}</pre></td></tr>
+    </table>
+</div>
+{{end}}
+
+<div class="card mt-1">
+    <h2>Recent Executions</h2>
+    {{if .Executions}}
+    <table>
+        <thead>
+            <tr>
+                <th>Started</th>
+                <th>Status</th>
+                <th>Duration</th>
+                <th>Output</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Executions}}
+            <tr>
+                <td>{{.StartedAt.Format "2006-01-02 15:04:05"}}</td>
+                <td><span class="badge badge-{{.Status}}">{{.Status}}</span></td>
+                <td>{{.DurationMs}} ms</td>
+                <td>
+                    {{if .Error}}
+                    <details>
+                        <summary class="text-sm">{{.Error}}</summary>
+                        <pre>{{.Output}}</pre>
+                    </details>
+                    {{else if .Output}}
+                    <details>
+                        <summary class="text-sm">output</summary>
+                        <pre>{{.Output}}</pre>
+                    </details>
+                    {{else}}
+                    <span class="text-muted">—</span>
+                    {{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p class="text-muted">No executions yet.</p>
+    {{end}}
+</div>
+
+<p class="mt-1"><a href="/jobs">← Back to jobs</a></p>
+{{end}}
