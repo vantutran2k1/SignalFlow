@@ -1,0 +1,30 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+  settings:
+    errcheck:
+      # These are fire-and-forget writers where ignoring the result is intentional,
+      # or close/rollback calls in defers where a secondary error isn't actionable.
+      exclude-functions:
+        - (net/http.ResponseWriter).Write
+        - (encoding/json.NewEncoder).Encode
+        - (*html/template.Template).Execute
+        - (*html/template.Template).ExecuteTemplate
+        - (io.Closer).Close
+        - (io.ReadCloser).Close
+        - (github.com/jackc/pgx/v5.Tx).Rollback
+
+  exclusions:
+    generated: lax
+    paths:
+      - migrations
