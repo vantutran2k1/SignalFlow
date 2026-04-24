@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: signalflow-config
+  namespace: signalflow
+data:
+  LISTEN_ADDR: ":8080"
+  LOG_FORMAT: "json"
+  WORKER_COUNT: "10"

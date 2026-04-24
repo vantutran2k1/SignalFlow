@@ -6,6 +6,7 @@ import (
 
 	"github.com/vantutran2k1/SignalFlow/internal/config"
 	"github.com/vantutran2k1/SignalFlow/internal/database"
+	"github.com/vantutran2k1/SignalFlow/migrations"
 )
 
 func main() {
@@ -17,7 +18,7 @@ func main() {
 
 	setupLogger(cfg)
 
-	if err := database.Migrate(cfg.DatabaseURL, "migrations"); err != nil {
+	if err := database.Migrate(cfg.DatabaseURL, migrations.FS); err != nil {
 		slog.Error("failed to run migrations", "error", err)
 		os.Exit(1)
 	}
