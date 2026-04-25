@@ -1,0 +1,19 @@
+{{- if .Values.postgres.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "signalflow.postgresFullname" . }}
+  labels:
+    {{- include "signalflow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  # Headless — DNS returns the pod IP directly, matching StatefulSet semantics.
+  clusterIP: None
+  selector:
+    {{- include "signalflow.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+  ports:
+    - name: pg
+      port: 5432
+      targetPort: pg
+{{- end }}

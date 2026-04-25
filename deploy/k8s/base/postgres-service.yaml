@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: signalflow-db
+  namespace: signalflow
+  labels:
+    app.kubernetes.io/name: signalflow
+    app.kubernetes.io/component: postgres
+spec:
+  # Headless so StatefulSet pod DNS (signalflow-db-0.signalflow-db) resolves
+  # to the stable pod identity rather than a load-balanced virtual IP.
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: signalflow
+    app.kubernetes.io/component: postgres
+  ports:
+    - name: pg
+      port: 5432
+      targetPort: pg

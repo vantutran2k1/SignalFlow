@@ -19,6 +19,7 @@ type Handlers struct {
 	Notification *NotificationHandler
 	Session      *SessionHandler
 	Dashboard    *DashboardHandler
+	Health       *HealthHandler
 }
 
 func NewRouter(jwtSecret string, h Handlers) http.Handler {
@@ -27,10 +28,11 @@ func NewRouter(jwtSecret string, h Handlers) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(30 * time.Second))
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-	})
+	// Kubernetes-style probes. /health kept as a liveness alias for
+	// docker-compose and other tooling that predates the split.
+	r.Get("/healthz", h.Health.Live)
+	r.Get("/readyz", h.Health.Ready)
+	r.Get("/health", h.Health.Live)
 
 	// Static assets served from embedded FS.
 	staticFS, _ := fs.Sub(web.FS, "static")

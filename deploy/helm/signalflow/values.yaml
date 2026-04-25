@@ -1,0 +1,101 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/vantutran2k1/signalflow
+  tag: ""  # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: signalflow.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    memory: 64Mi
+    cpu: 100m
+  limits:
+    memory: 128Mi
+    cpu: 250m
+
+# Migration init container — runs /usr/local/bin/migrate from the app image
+# before the main container starts. Toggle off only if you run migrations
+# out-of-band.
+migrations:
+  enabled: true
+  resources:
+    requests:
+      memory: 32Mi
+      cpu: 50m
+    limits:
+      memory: 64Mi
+      cpu: 200m
+
+# Non-secret env. Rendered into a ConfigMap.
+env:
+  LISTEN_ADDR: ":8080"
+  LOG_FORMAT: "json"
+  WORKER_COUNT: "10"
+
+# Secret env. Rendered into a Secret. DATABASE_URL is auto-computed when
+# postgres.enabled=true; set it explicitly here to point at an external DB.
+secrets:
+  JWT_SECRET: "change-me-in-production"
+  DATABASE_URL: ""
+
+# Bundled PostgreSQL — a minimal StatefulSet using the official postgres image,
+# deployed alongside the app. Disable to bring your own database (RDS, Cloud SQL,
+# a Postgres operator, etc.) and supply secrets.DATABASE_URL explicitly.
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "17-alpine"
+    pullPolicy: IfNotPresent
+  auth:
+    username: signalflow
+    password: secret
+    database: signalflow
+  persistence:
+    size: 1Gi
+    storageClass: ""   # empty = cluster default StorageClass
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 500m
