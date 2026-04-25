@@ -6,7 +6,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/signalflow ./cmd/signalflow
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/migrate ./cmd/migrate
 
-FROM alpine:3.21
+FROM alpine:3.23
 RUN apk add --no-cache ca-certificates \
  && adduser -D -u 10001 -g '' appuser
 COPY --from=builder /out/signalflow /usr/local/bin/signalflow
