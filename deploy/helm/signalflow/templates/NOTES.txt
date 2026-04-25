@@ -1,0 +1,34 @@
+{{- if .Values.ingress.enabled }}
+SignalFlow is available at:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+SignalFlow is running inside the cluster. To access it from your machine:
+
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "signalflow.fullname" . }} 8080:{{ .Values.service.port }}
+
+Then open:
+
+  http://localhost:8080          (dashboard)
+  http://localhost:8080/api/v1   (JSON API)
+  http://localhost:8080/healthz  (liveness)
+  http://localhost:8080/readyz   (readiness)
+{{- end }}
+
+Register a first user:
+
+  curl -X POST http://localhost:8080/api/v1/auth/register \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"you@example.com","password":"secret1234","name":"You"}'
+
+{{- if .Values.postgres.enabled }}
+
+This release bundles PostgreSQL as a StatefulSet ({{ include "signalflow.postgresFullname" . }}).
+To point at an external database instead, set `postgres.enabled=false` and supply
+`secrets.DATABASE_URL`.
+{{- else }}
+
+Bundled PostgreSQL is disabled. The app connects to the DATABASE_URL supplied
+via `secrets.DATABASE_URL`.
+{{- end }}

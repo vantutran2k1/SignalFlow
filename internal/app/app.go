@@ -65,6 +65,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		Notification: handler.NewNotificationHandler(notifSvc),
 		Session:      handler.NewSessionHandler(authSvc, cfg.JWTSecret),
 		Dashboard:    handler.NewDashboardHandler(jobSvc, channelSvc, execSvc, dashSvc),
+		Health:       handler.NewHealthHandler(pool),
 	}
 
 	executors := map[domain.JobType]executor.Executor{
